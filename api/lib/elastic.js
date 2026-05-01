@@ -15,7 +15,6 @@ export function getClient() {
 export const INDICES = {
   USERS: 'hackerrivals-users',
   CHALLENGES: 'hackerrivals-challenges',
-  EVENTS: 'hackerrivals-events',
 }
 
 export async function ensureIndices() {
@@ -26,12 +25,10 @@ export async function ensureIndices() {
       index: INDICES.USERS,
       mappings: {
         properties: {
-          name: { type: 'keyword' },
-          username: { type: 'keyword' },   // chosen display handle for Kibana
+          username: { type: 'keyword' },
           emoji: { type: 'keyword' },
-          email: { type: 'keyword' },
-          team: { type: 'keyword' },
           qr_token: { type: 'keyword' },
+          team: { type: 'keyword' },
           total_points: { type: 'integer' },
           completed_challenges: { type: 'keyword' },
           paired_users: { type: 'keyword' },
@@ -55,21 +52,6 @@ export async function ensureIndices() {
         }
       }
     },
-    {
-      index: INDICES.EVENTS,
-      mappings: {
-        properties: {
-          user_id: { type: 'keyword' },
-          username: { type: 'keyword' },   // denormalized — Kibana aggregates on this
-          team: { type: 'keyword' },
-          challenge_id: { type: 'keyword' },
-          challenge_type: { type: 'keyword' },
-          points_earned: { type: 'integer' },
-          score: { type: 'float' },
-          timestamp: { type: 'date' },
-        }
-      }
-    },
   ]
 
   for (const { index, mappings } of indices) {
@@ -80,38 +62,13 @@ export async function ensureIndices() {
   }
 }
 
-// Fetch the display identity fields needed to denormalize into events
-async function getUserIdentity(client, userId) {
-  const doc = await client.get({
-    index: INDICES.USERS,
-    id: userId,
-    _source: ['username', 'emoji', 'name', 'team'],
-  })
-  const handle = doc._source.username || doc._source.name
-  const emoji = doc._source.emoji
-  return {
-    username: emoji ? `${emoji} ${handle}` : handle,
-    team: doc._source.team || '',
-  }
+function logEvent(type, data) {
+  // Structured JSON log — Vercel captures stdout and can forward to Elastic
+  console.log(JSON.stringify({ '@timestamp': new Date(), type, ...data }))
 }
 
 export async function awardPoints(userId, challengeId, challengeType, points, extra = {}) {
   const client = getClient()
-  const identity = await getUserIdentity(client, userId)
-
-  await client.index({
-    index: INDICES.EVENTS,
-    document: {
-      user_id: userId,
-      username: identity.username,
-      team: identity.team,
-      challenge_id: challengeId,
-      challenge_type: challengeType,
-      points_earned: points,
-      timestamp: new Date(),
-      ...extra,
-    }
-  })
 
   await client.update({
     index: INDICES.USERS,
@@ -126,46 +83,13 @@ export async function awardPoints(userId, challengeId, challengeType, points, ex
       params: { points, cid: challengeId },
     }
   })
+
+  logEvent('points_awarded', { userId, challengeId, challengeType, points, ...extra })
 }
 
 export async function awardPairing(scannerId, targetId, points) {
   const client = getClient()
-  const [scannerIdentity, targetIdentity] = await Promise.all([
-    getUserIdentity(client, scannerId),
-    getUserIdentity(client, targetId),
-  ])
-
   const pairKey = [scannerId, targetId].sort().join('::')
-
-  // One event per user so Kibana can aggregate each individually
-  await Promise.all([
-    client.index({
-      index: INDICES.EVENTS,
-      document: {
-        user_id: scannerId,
-        username: scannerIdentity.username,
-        team: scannerIdentity.team,
-        challenge_type: 'pair',
-        partner_id: targetId,
-        pair_key: pairKey,
-        points_earned: points,
-        timestamp: new Date(),
-      }
-    }),
-    client.index({
-      index: INDICES.EVENTS,
-      document: {
-        user_id: targetId,
-        username: targetIdentity.username,
-        team: targetIdentity.team,
-        challenge_type: 'pair',
-        partner_id: scannerId,
-        pair_key: pairKey,
-        points_earned: points,
-        timestamp: new Date(),
-      }
-    }),
-  ])
 
   const pairScript = {
     source: `
@@ -189,4 +113,6 @@ export async function awardPairing(scannerId, targetId, points) {
       script: { ...pairScript, params: { points, otherId: scannerId } },
     }),
   ])
+
+  logEvent('pairing', { scannerId, targetId, pairKey, points })
 }

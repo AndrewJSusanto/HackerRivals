@@ -7,7 +7,7 @@ export function useChallenges() {
 
   useEffect(() => {
     api.get('/challenges')
-      .then(r => setChallenges(r.data.challenges))
+      .then(r => setChallenges(r.data?.challenges ?? []))
       .finally(() => setLoading(false))
   }, [])
 

@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/**/*.js": { "runtime": "nodejs20.x" },
+    "api/vision.py": { "runtime": "python3.12" }
+  },
+  "env": {
+    "ELASTIC_URL": "@elastic_url",
+    "ELASTIC_API_KEY": "@elastic_api_key",
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "JWT_SECRET": "@jwt_secret"
+  }
+}

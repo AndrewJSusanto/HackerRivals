@@ -21,16 +21,6 @@ export default function App() {
     setShowScanner(true);
   };
 
-  const handleScanFriend = () => {
-    console.log('Scanning friend code');
-    setShowScanner(false);
-  };
-
-  const handleScanMission = () => {
-    console.log('Scanning mission code');
-    setShowScanner(false);
-  };
-
   const renderScreen = () => {
     if (showUIStates) {
       return <UIStatesDemo />;
@@ -44,7 +34,7 @@ export default function App() {
       case 'leaderboard':
         return <Leaderboard currentUserNickname={user?.username} currentUserAvatar={user?.emoji} />;
       case 'profile':
-        return <Profile userNickname={user?.username} userAvatar={user?.emoji} />;
+        return <Profile userNickname={user?.username} userAvatar={user?.emoji} userQrToken={user?.qr_token} />;
       default:
         return <Homepage userNickname={user?.username} userAvatar={user?.emoji} />;
     }
@@ -87,11 +77,7 @@ export default function App() {
 
         {/* Scanner Overlay */}
         {showScanner && (
-          <Scanner
-            onClose={() => setShowScanner(false)}
-            onScanFriend={handleScanFriend}
-            onScanMission={handleScanMission}
-          />
+          <Scanner onClose={() => setShowScanner(false)} />
         )}
       </div>
     </div>

@@ -1,4 +1,6 @@
-export function Profile({ userNickname, userAvatar }) {
+import { QRCodeSVG } from 'qrcode.react';
+
+export function Profile({ userNickname, userAvatar, userQrToken }) {
   const stats = {
     missionsDone: 12,
     currentRank: 14,
@@ -236,29 +238,36 @@ export function Profile({ userNickname, userAvatar }) {
         >
           <h3 className="mb-4 text-center">My QR Code</h3>
           <div
-            className="w-full aspect-square rounded-xl mb-4 flex items-center justify-center"
+            className="w-full aspect-square rounded-xl mb-4 flex items-center justify-center p-6"
             style={{
               backgroundColor: '#ffffff',
               maxWidth: '240px',
               margin: '0 auto',
             }}
           >
-            {/* QR Code Placeholder */}
-            <div className="grid grid-cols-8 gap-1 p-6">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-sm"
-                  style={{
-                    backgroundColor: Math.random() > 0.5 ? '#000000' : '#ffffff',
-                  }}
-                />
-              ))}
-            </div>
+            {userQrToken ? (
+              <QRCodeSVG
+                value={userQrToken}
+                size={192}
+                level="M"
+                includeMargin={false}
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <p style={{ fontSize: '12px', color: '#888' }}>QR unavailable</p>
+            )}
           </div>
           <p className="text-center" style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
             Let friends scan your code
           </p>
+          {userQrToken && (
+            <p
+              className="text-center mt-1 font-mono"
+              style={{ fontSize: '12px', color: 'var(--text-muted)' }}
+            >
+              {userQrToken}
+            </p>
+          )}
         </div>
       </div>
     </div>

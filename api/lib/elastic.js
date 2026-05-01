@@ -28,6 +28,7 @@ export async function ensureIndices() {
         properties: {
           name: { type: 'keyword' },
           username: { type: 'keyword' },   // chosen display handle for Kibana
+          emoji: { type: 'keyword' },
           email: { type: 'keyword' },
           team: { type: 'keyword' },
           qr_token: { type: 'keyword' },
@@ -84,10 +85,12 @@ async function getUserIdentity(client, userId) {
   const doc = await client.get({
     index: INDICES.USERS,
     id: userId,
-    _source: ['username', 'name', 'team'],
+    _source: ['username', 'emoji', 'name', 'team'],
   })
+  const handle = doc._source.username || doc._source.name
+  const emoji = doc._source.emoji
   return {
-    username: doc._source.username || doc._source.name,
+    username: emoji ? `${emoji} ${handle}` : handle,
     team: doc._source.team || '',
   }
 }

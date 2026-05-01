@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../lib/api'
 
@@ -9,18 +9,13 @@ const EMOJIS = [
   '🦊','🐺','🦁','🐯','😈','🧙','🥷','👾','🌟','🧊',
 ]
 
-export default function SetUsername() {
-  const { user, login } = useAuth()
+export default function Login() {
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [emoji, setEmoji] = useState(EMOJIS[0])
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-
-  if (user?.username) {
-    navigate('/', { replace: true })
-    return null
-  }
 
   const valid = /^[a-zA-Z0-9_]{3,20}$/.test(username)
   const displayName = `${emoji} ${username.toLowerCase() || 'yourhandle'}`
@@ -31,29 +26,33 @@ export default function SetUsername() {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await api.post('/user/username', { userId: user.id, username, emoji })
+      const { data } = await api.post('/user/create', { username, emoji })
       login(data.user)
       navigate('/', { replace: true, state: { firstLogin: true } })
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to set username')
+      setError(err.response?.data?.error || 'Something went wrong')
       setLoading(false)
     }
   }
 
   return (
     <div className="min-h-screen flex flex-col p-6 pt-12 gap-7 max-w-sm mx-auto">
+
+      {/* Branding */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold">Choose your handle</h1>
-        <p className="text-slate-400 text-sm mt-2">This is what the leaderboard will show.</p>
-        {user?.name && <p className="text-slate-600 text-xs mt-1">Registered as: {user.name}</p>}
+        <h1 className="text-4xl font-bold text-green-400 tracking-tight">HackerRivals</h1>
+        <p className="text-slate-400 text-sm mt-2">Hackathon Scavenger Hunt</p>
       </div>
 
+      {/* Live preview */}
       <div className="bg-slate-800/60 border border-slate-700 rounded-2xl py-4 text-center">
         <p className="text-xs text-slate-500 mb-1">Your leaderboard name</p>
-        <p className="text-3xl font-bold">{displayName}</p>
+        <p className="text-3xl font-bold tracking-tight">{displayName}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+
+        {/* Emoji grid */}
         <div>
           <p className="text-xs font-medium text-slate-400 mb-2">Pick your emoji</p>
           <div className="grid grid-cols-10 gap-1.5">
@@ -74,6 +73,7 @@ export default function SetUsername() {
           </div>
         </div>
 
+        {/* Username */}
         <div>
           <p className="text-xs font-medium text-slate-400 mb-2">Choose a handle</p>
           <div className="relative">
@@ -97,7 +97,7 @@ export default function SetUsername() {
           }`}>
             {username.length === 0
               ? '3–20 chars · letters, numbers, underscores'
-              : valid ? `${emoji} ${username.toLowerCase()} looks good`
+              : valid ? `${emoji} ${username.toLowerCase()} is available — maybe`
               : 'Letters, numbers and underscores only (3–20 chars)'}
           </p>
         </div>
@@ -107,11 +107,18 @@ export default function SetUsername() {
         <button
           type="submit"
           disabled={!valid || loading}
-          className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-40 text-black font-bold py-4 rounded-2xl transition-colors"
+          className="w-full bg-green-500 hover:bg-green-400 active:bg-green-600 disabled:opacity-40 text-black font-bold py-4 rounded-2xl text-base transition-colors"
         >
-          {loading ? 'Saving...' : 'Set Handle →'}
+          {loading ? 'Joining...' : 'Join the Hunt →'}
         </button>
       </form>
+
+      <p className="text-slate-600 text-xs text-center pb-4">
+        Have an event badge?{' '}
+        <Link to="/badge-login" className="text-green-500 hover:text-green-400 underline">
+          Scan it here
+        </Link>
+      </p>
     </div>
   )
 }

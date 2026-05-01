@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import QRScanner from '../components/QRScanner'
 import api from '../lib/api'
@@ -23,14 +23,14 @@ export default function BadgeLogin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-8 max-w-sm mx-auto">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-green-400">HackerRivals</h1>
         <p className="text-slate-400 mt-2 text-sm">Scan the QR on your badge to begin</p>
       </div>
 
       {phase === 'scan' && (
-        <div className="w-full max-w-sm">
+        <div className="w-full">
           <QRScanner onScan={handleScan} />
         </div>
       )}
@@ -43,7 +43,7 @@ export default function BadgeLogin() {
       )}
 
       {phase === 'error' && (
-        <div className="w-full max-w-sm space-y-4 text-center">
+        <div className="w-full space-y-4 text-center">
           <p className="text-red-400">{error}</p>
           <button
             onClick={() => { setPhase('scan'); setError(null) }}
@@ -53,6 +53,13 @@ export default function BadgeLogin() {
           </button>
         </div>
       )}
+
+      <p className="text-slate-600 text-xs">
+        No badge?{' '}
+        <Link to="/login" className="text-green-500 hover:text-green-400 underline">
+          Join as a demo user
+        </Link>
+      </p>
     </div>
   )
 }

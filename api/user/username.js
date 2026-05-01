@@ -7,7 +7,7 @@ const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { userId, username } = req.body
+  const { userId, username, emoji } = req.body
   if (!userId || !username) return res.status(400).json({ error: 'userId and username required' })
 
   if (!USERNAME_RE.test(username)) {
@@ -26,17 +26,18 @@ export default async function handler(req, res) {
     return res.status(409).json({ error: 'Username already taken' })
   }
 
-  // Save username (lowercased for consistency)
   await client.update({
     index: INDICES.USERS,
     id: userId,
-    doc: { username: username.toLowerCase() },
+    doc: {
+      username: username.toLowerCase(),
+      emoji: emoji || '🚀',
+    },
   })
 
-  // Award login points now that we have a display name to attach to the event
+  // Award login points — getUserIdentity now reads the saved emoji+username
   await awardPoints(userId, LOGIN_SENTINEL, 'login', LOGIN_POINTS)
 
-  // Return updated user
   const updated = await client.get({ index: INDICES.USERS, id: userId })
   res.status(200).json({ user: { id: userId, ...updated._source } })
 }

@@ -34,18 +34,27 @@ async function createChallenge(req, res) {
     created_at: new Date(),
   }
 
-  const client = getClient()
-  await client.index({ index: INDICES.CHALLENGES, id, document: doc })
-
-  res.status(201).json({ id, qr_value, ...doc })
+  try {
+    const client = getClient()
+    await client.index({ index: INDICES.CHALLENGES, id, document: doc })
+    res.status(201).json({ id, qr_value, ...doc })
+  } catch (err) {
+    console.error('ES index error:', err?.meta?.body ?? err?.message ?? err)
+    res.status(500).json({ error: 'Failed to save challenge', detail: err?.meta?.body?.error ?? err?.message })
+  }
 }
 
 async function listChallenges(req, res) {
-  const client = getClient()
-  const result = await client.search({
-    index: INDICES.CHALLENGES,
-    size: 100,
-    sort: [{ created_at: 'desc' }],
-  })
-  res.json(result.hits.hits.map(h => ({ id: h._id, ...h._source })))
+  try {
+    const client = getClient()
+    const result = await client.search({
+      index: INDICES.CHALLENGES,
+      size: 100,
+      sort: [{ created_at: 'desc' }],
+    })
+    res.json(result.hits.hits.map(h => ({ id: h._id, ...h._source })))
+  } catch (err) {
+    console.error('ES search error:', err?.meta?.body ?? err?.message ?? err)
+    res.status(500).json({ error: 'Failed to list challenges', detail: err?.meta?.body?.error ?? err?.message })
+  }
 }

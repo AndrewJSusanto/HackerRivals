@@ -5,7 +5,7 @@ import api from '../lib/api'
 const CHALLENGE_TYPES = ['booth', 'quiz', 'photo']
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('create')
+  const [activeTab, setActiveTab] = useState('demo')
   const [form, setForm] = useState({
     type: 'booth',
     title: '',
@@ -35,17 +35,19 @@ export default function Admin() {
     <div className="p-6 space-y-4">
       <h1 className="text-xl font-bold">Admin Panel</h1>
 
-      <div className="flex gap-2">
-        {['create', 'qr'].map(tab => (
+      <div className="flex gap-2 flex-wrap">
+        {['demo', 'create', 'qr'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === tab ? 'bg-green-500 text-black' : 'bg-slate-800 text-slate-300'}`}
           >
-            {tab === 'create' ? 'Create Challenge' : 'View QRs'}
+            {{ demo: 'Demo QR', create: 'Create Challenge', qr: 'View QRs' }[tab]}
           </button>
         ))}
       </div>
+
+      {activeTab === 'demo' && <DemoQR />}
 
       {activeTab === 'create' && (
         <form onSubmit={handleCreate} className="space-y-4">
@@ -116,6 +118,40 @@ export default function Admin() {
           <p className="text-sm text-slate-400 font-mono">{created.qr_value}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+function DemoQR() {
+  const loginUrl = `${window.location.origin}/login`
+
+  return (
+    <div className="flex flex-col items-center gap-4 py-4">
+      <p className="text-slate-400 text-sm text-center">
+        Print or display this QR at your event.<br />
+        Scanning it opens the join screen directly.
+      </p>
+
+      <div className="bg-white p-5 rounded-2xl shadow-lg" id="demo-qr-svg">
+        <QRCodeSVG value={loginUrl} size={200} />
+      </div>
+
+      <p className="text-xs text-slate-500 font-mono break-all text-center px-4">{loginUrl}</p>
+
+      <div className="flex gap-3 w-full">
+        <button
+          onClick={() => navigator.clipboard.writeText(loginUrl)}
+          className="flex-1 border border-slate-600 text-slate-300 py-2.5 rounded-xl text-sm hover:bg-slate-800 transition-colors"
+        >
+          Copy URL
+        </button>
+        <button
+          onClick={() => window.open(`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(loginUrl)}`, '_blank')}
+          className="flex-1 bg-green-500 text-black font-semibold py-2.5 rounded-xl text-sm hover:bg-green-400 transition-colors"
+        >
+          Download PNG
+        </button>
+      </div>
     </div>
   )
 }

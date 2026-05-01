@@ -7,6 +7,8 @@ export function getClient() {
     _client = new Client({
       node: process.env.ELASTIC_URL,
       auth: { apiKey: process.env.ELASTIC_API_KEY },
+      requestTimeout: 10000,
+      maxRetries: 1,
     })
   }
   return _client

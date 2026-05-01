@@ -1,26 +1,18 @@
-import { useState, useRef, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Trophy, ZoomIn, ZoomOut, X } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Trophy, ZoomIn, ZoomOut, QrCode } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useMyRank } from '../hooks/useMyRank'
 import LeaderboardDrawer from '../components/LeaderboardDrawer'
+import MyBadgeModal from '../components/MyBadgeModal'
 import Objectives from '../components/Objectives'
-
-const LOGIN_POINTS = 25
 
 export default function Home() {
   const { user } = useAuth()
   const { rank, points } = useMyRank(user.id)
-  const { state } = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [badgeOpen, setBadgeOpen] = useState(false)
   const [mapZoom, setMapZoom] = useState(1)
-  const [showWelcome, setShowWelcome] = useState(!!state?.firstLogin)
   const mapRef = useRef(null)
-
-  // Clear location state so refresh doesn't re-show the banner
-  useEffect(() => {
-    if (state?.firstLogin) window.history.replaceState({}, '')
-  }, [])
 
   const zoomMap = (delta) => setMapZoom(z => Math.min(3, Math.max(1, z + delta)))
 
@@ -28,22 +20,10 @@ export default function Home() {
     <>
       <div className="flex flex-col min-h-[calc(100vh-56px)]">
 
-        {showWelcome && (
-          <div className="mx-4 mt-4 flex items-center justify-between bg-green-900/40 border border-green-600 rounded-xl px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-green-300">Welcome, {user.name}!</p>
-              <p className="text-xs text-green-500 mt-0.5">+{LOGIN_POINTS} pts for joining the hunt</p>
-            </div>
-            <button onClick={() => setShowWelcome(false)} className="text-green-600 hover:text-green-400 p-1">
-              <X size={16} />
-            </button>
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
           <div>
-            <h1 className="text-lg font-bold leading-tight">{user.name}</h1>
+            <h1 className="text-lg font-bold leading-tight">{user.emoji} @{user.username}</h1>
             {user.team && <p className="text-xs text-slate-500">{user.team}</p>}
           </div>
           <div className="flex items-center gap-3">
@@ -57,6 +37,14 @@ export default function Home() {
                 <p className="text-lg font-bold text-yellow-400 leading-tight">#{rank}</p>
               </div>
             )}
+            <button
+              onClick={() => setBadgeOpen(true)}
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-green-400 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              aria-label="Show my badge QR"
+            >
+              <QrCode size={16} />
+              Badge
+            </button>
             <button
               onClick={() => setDrawerOpen(true)}
               className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-yellow-400 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -120,6 +108,7 @@ export default function Home() {
       </div>
 
       <LeaderboardDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <MyBadgeModal open={badgeOpen} onClose={() => setBadgeOpen(false)} user={user} />
     </>
   )
 }

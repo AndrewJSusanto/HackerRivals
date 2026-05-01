@@ -1,5 +1,4 @@
 export function BottomNav({ activeTab, onTabChange, onScanClick }) {
-
   const tabs = [
     { id: 'home', label: 'Home', icon: 'home' },
     { id: 'hunt', label: 'Hunt', icon: 'explore' },
@@ -7,66 +6,80 @@ export function BottomNav({ activeTab, onTabChange, onScanClick }) {
     { id: 'profile', label: 'Profile', icon: 'person' },
   ];
 
+  const [left, right] = [tabs.slice(0, 2), tabs.slice(2)];
+
   return (
-    <>
-      {/* Floating Action Button */}
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[390px] w-full flex justify-center">
+    <nav
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] h-16 flex items-center"
+      style={{
+        backgroundColor: 'var(--surface-2)',
+        borderTop: '0.5px solid var(--border-color)',
+      }}
+    >
+      {left.map((tab) => (
+        <NavTab
+          key={tab.id}
+          tab={tab}
+          active={activeTab === tab.id}
+          onClick={() => onTabChange(tab.id)}
+        />
+      ))}
+
+      <div className="flex-1 flex items-center justify-center">
         <button
           onClick={onScanClick}
-          className="flex flex-col items-center gap-1 group"
-          style={{ minWidth: '44px', minHeight: '44px' }}
+          aria-label="Scan QR"
+          className="rounded-full flex items-center justify-center active:scale-95 transition-transform"
+          style={{
+            width: '52px',
+            height: '52px',
+            backgroundColor: 'var(--ocean-blue)',
+            boxShadow: '0 4px 14px rgba(61, 120, 171, 0.45)',
+            minWidth: '44px',
+            minHeight: '44px',
+          }}
         >
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-            style={{ backgroundColor: 'var(--ocean-blue)' }}
+          <span
+            className="material-symbols-rounded"
+            style={{ color: '#ffffff', fontSize: '28px' }}
           >
-            <span className="material-symbols-rounded text-white">photo_camera</span>
-          </div>
-          <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            Scan
+            photo_camera
           </span>
         </button>
       </div>
 
-      {/* Bottom Navigation Bar */}
-      <nav
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] h-16 flex items-center justify-around"
-        style={{
-          backgroundColor: 'var(--surface-2)',
-          borderTop: '0.5px solid var(--border-color)',
-        }}
+      {right.map((tab) => (
+        <NavTab
+          key={tab.id}
+          tab={tab}
+          active={activeTab === tab.id}
+          onClick={() => onTabChange(tab.id)}
+        />
+      ))}
+    </nav>
+  );
+}
+
+function NavTab({ tab, active, onClick }) {
+  const color = active ? 'var(--ocean-blue)' : 'var(--text-muted)';
+  return (
+    <button
+      onClick={onClick}
+      className="flex-1 flex flex-col items-center justify-center gap-1"
+      style={{ minWidth: '44px', minHeight: '44px' }}
+    >
+      <span
+        className="material-symbols-rounded transition-colors"
+        style={{ fontSize: '24px', color }}
       >
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className="flex flex-col items-center justify-center gap-1 flex-1"
-              style={{ minWidth: '44px', minHeight: '44px' }}
-            >
-              <span
-                className="material-symbols-rounded transition-colors"
-                style={{
-                  fontSize: '24px',
-                  color: isActive ? 'var(--ocean-blue)' : 'var(--text-muted)',
-                }}
-              >
-                {tab.icon}
-              </span>
-              <span
-                className="text-caption transition-colors"
-                style={{
-                  fontSize: '12px',
-                  color: isActive ? 'var(--ocean-blue)' : 'var(--text-muted)',
-                }}
-              >
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-    </>
+        {tab.icon}
+      </span>
+      <span
+        className="transition-colors"
+        style={{ fontSize: '12px', color }}
+      >
+        {tab.label}
+      </span>
+    </button>
   );
 }

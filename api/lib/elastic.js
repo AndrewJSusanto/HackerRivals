@@ -49,6 +49,7 @@ export async function ensureIndices() {
           points: { type: 'integer' },
           questions: { type: 'object', enabled: false },
           keywords: { type: 'keyword' },
+          min_pairings: { type: 'integer' },
           active: { type: 'boolean' },
           created_at: { type: 'date' },
         }

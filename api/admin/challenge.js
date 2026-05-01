@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 }
 
 async function createChallenge(req, res) {
-  const { type, title, description, points, code, questions, keywords } = req.body
+  const { type, title, description, points, code, questions, keywords, min_pairings } = req.body
 
   if (!type || !title || !points) return res.status(400).json({ error: 'type, title, points required' })
 
@@ -30,6 +30,7 @@ async function createChallenge(req, res) {
     points: Number(points),
     questions: type === 'quiz' ? questions : [],
     keywords: type === 'photo' ? (keywords || '').split(',').map(k => k.trim()) : [],
+    min_pairings: type === 'social' ? Math.max(1, Number(min_pairings) || 1) : 0,
     active: true,
     created_at: new Date(),
   }

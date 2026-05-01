@@ -1,4 +1,4 @@
-import { getClient, INDICES, awardPairing } from './lib/elastic.js'
+import { getClient, INDICES, awardPairing, awardPoints } from './lib/elastic.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
@@ -37,11 +37,18 @@ export default async function handler(req, res) {
     const PAIR_POINTS = 50
     await awardPairing(userId, targetId, PAIR_POINTS)
 
+    const [scannerCompleted, targetCompleted] = await Promise.all([
+      checkSocialChallenges(userId),
+      checkSocialChallenges(targetId),
+    ])
+
     return res.json({
       type: 'pair',
       points: PAIR_POINTS,
       message: `Paired with @${target._source.username}!`,
       partner: { id: targetId, name: target._source.username, team: target._source.team },
+      completedChallenges: scannerCompleted,
+      partnerCompletedChallenges: targetCompleted,
     })
   }
 
@@ -67,4 +74,29 @@ export default async function handler(req, res) {
   // All challenge types now return to the frontend for modal handling —
   // no points are awarded at scan time
   res.json({ type, challengeId: cid, title, description, points })
+}
+
+async function checkSocialChallenges(userId) {
+  const client = getClient()
+  const user = await client.get({ index: INDICES.USERS, id: userId })
+  const pairCount = user._source.paired_users?.length || 0
+  const completed = user._source.completed_challenges || []
+
+  const result = await client.search({
+    index: INDICES.CHALLENGES,
+    size: 50,
+    query: { bool: { must: [{ term: { type: 'social' } }, { term: { active: true } }] } },
+  })
+
+  const newlyCompleted = []
+  for (const hit of result.hits.hits) {
+    const cid = hit._id
+    const min = hit._source.min_pairings || 1
+    if (completed.includes(cid)) continue
+    if (pairCount >= min) {
+      await awardPoints(userId, cid, 'social', hit._source.points)
+      newlyCompleted.push({ id: cid, title: hit._source.title, points: hit._source.points })
+    }
+  }
+  return newlyCompleted
 }

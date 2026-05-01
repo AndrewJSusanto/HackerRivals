@@ -1,4 +1,4 @@
-import { getClient, INDICES, awardPoints, awardPairing } from './lib/elastic.js'
+import { getClient, INDICES, awardPairing } from './lib/elastic.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
@@ -6,14 +6,14 @@ export default async function handler(req, res) {
   const { token, userId } = req.body
   if (!token || !userId) return res.status(400).json({ error: 'token and userId required' })
 
-  // Self-scan guard
   const client = getClient()
   const scanner = await client.get({ index: INDICES.USERS, id: userId })
+
   if (scanner._source.qr_token === token) {
     return res.status(400).json({ error: "That's your own badge!" })
   }
 
-  // --- Try user badge (pairing) first ---
+  // --- User badge → pairing ---
   const userMatch = await client.search({
     index: INDICES.USERS,
     query: { term: { qr_token: token } },
@@ -24,9 +24,14 @@ export default async function handler(req, res) {
     const target = userMatch.hits.hits[0]
     const targetId = target._id
 
-    // Prevent scanning the same person twice
+    if (!scanner._source.username) {
+      return res.status(403).json({ error: 'Set your username before pairing' })
+    }
+    if (!target._source.username) {
+      return res.status(403).json({ error: `${target._source.name} hasn't set their username yet` })
+    }
     if (scanner._source.paired_users?.includes(targetId)) {
-      return res.status(409).json({ error: `You already paired with ${target._source.name}` })
+      return res.status(409).json({ error: `You already paired with @${target._source.username}` })
     }
 
     const PAIR_POINTS = 50
@@ -35,12 +40,12 @@ export default async function handler(req, res) {
     return res.json({
       type: 'pair',
       points: PAIR_POINTS,
-      message: `Paired with ${target._source.name}!`,
-      partner: { id: targetId, name: target._source.name, team: target._source.team },
+      message: `Paired with @${target._source.username}!`,
+      partner: { id: targetId, name: target._source.username, team: target._source.team },
     })
   }
 
-  // --- Try challenge code ---
+  // --- Challenge QR ---
   const challengeMatch = await client.search({
     index: INDICES.CHALLENGES,
     query: { term: { code: token } },
@@ -53,17 +58,13 @@ export default async function handler(req, res) {
 
   const challenge = challengeMatch.hits.hits[0]
   const cid = challenge._id
-  const { type, points, title } = challenge._source
+  const { type, title, description, points } = challenge._source
 
   if (scanner._source.completed_challenges?.includes(cid)) {
     return res.status(409).json({ error: 'Already completed this challenge' })
   }
 
-  // Booth resolves instantly; quiz/photo need the frontend flow
-  if (type === 'booth') {
-    await awardPoints(userId, cid, 'booth', points)
-    return res.json({ type: 'booth', points, message: `${title} — checked in!`, challengeId: cid })
-  }
-
-  res.json({ type, challengeId: cid, title })
+  // All challenge types now return to the frontend for modal handling —
+  // no points are awarded at scan time
+  res.json({ type, challengeId: cid, title, description, points })
 }

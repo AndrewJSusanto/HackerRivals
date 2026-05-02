@@ -1,75 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Chip } from '@mui/material';
 import { PhotoMissionSheet } from './PhotoMissionSheet';
 import { CodeMissionSheet } from './CodeMissionSheet';
 import { EmptyState } from './EmptyState';
 import { SuccessSnackbar } from './SuccessSnackbar';
 import { MissionListSkeleton } from './SkeletonLoading';
+import api from '../../lib/api';
+
+const TYPE_ICONS = {
+  booth: 'corporate_fare',
+  quiz: 'quiz',
+  photo: 'photo_camera',
+  social: 'groups',
+};
+
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'booth', label: 'Booth' },
+  { id: 'quiz', label: 'Quiz' },
+  { id: 'photo', label: 'Photo' },
+  { id: 'social', label: 'Social' },
+];
 
 export function Hunt() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedMission, setSelectedMission] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [missions, setMissions] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
   });
 
-  const filters = [
-    { id: 'all', label: 'All' },
-    { id: 'photo', label: 'Photo' },
-    { id: 'code', label: 'Code' },
-    { id: 'social', label: 'Social' },
-    { id: 'sponsor', label: 'Sponsor' },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/challenges')
+      .then((res) => {
+        if (cancelled) return;
+        const challenges = res.data?.challenges ?? [];
+        setMissions(
+          challenges.map((c) => ({
+            ...c,
+            icon: TYPE_ICONS[c.type] || 'flag',
+            status: 'available',
+          }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setMissions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const missions = [
-    {
-      id: 1,
-      type: 'photo',
-      icon: 'photo_camera',
-      title: 'Spot the Swag',
-      description: 'Find a Cloud Summit water bottle and take a photo',
-      points: 150,
-      status: 'available',
-    },
-    {
-      id: 2,
-      type: 'code',
-      icon: 'tag',
-      title: 'Booth Code Challenge',
-      description: 'Visit the sponsor booth and ask for the secret code',
-      points: 200,
-      status: 'available',
-    },
-    {
-      id: 3,
-      type: 'social',
-      icon: 'share',
-      title: 'Share the Summit',
-      description: 'Post about Cloud Summit with #CloudSummit2026',
-      points: 75,
-      status: 'completed',
-    },
-    {
-      id: 4,
-      type: 'photo',
-      icon: 'groups',
-      title: 'Team Photo',
-      description: 'Take a group photo with at least 5 attendees',
-      points: 250,
-      status: 'available',
-    },
-    {
-      id: 5,
-      type: 'sponsor',
-      icon: 'corporate_fare',
-      title: 'Sponsor Visit',
-      description: 'Visit all 10 sponsor booths in the expo hall',
-      points: 300,
-      status: 'locked',
-    },
-  ];
+  const filters = FILTERS;
 
   const filteredMissions = missions.filter((mission) => {
     if (selectedFilter === 'all') return true;
@@ -328,7 +317,7 @@ export function Hunt() {
           }}
         />
       )}
-      {selectedMission?.type === 'code' && (
+      {(selectedMission?.type === 'booth' || selectedMission?.type === 'quiz') && (
         <CodeMissionSheet
           mission={selectedMission}
           onClose={() => {

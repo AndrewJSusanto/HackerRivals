@@ -1,23 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LeaderboardSkeleton } from './SkeletonLoading';
 
-export function Leaderboard({ currentUserNickname, currentUserAvatar }) {
-  const [isLoading, setIsLoading] = useState(false);
-  const leaderboardData = [
-    { rank: 1, avatar: '🚀', nickname: 'SpeedRunner', points: 2850 },
-    { rank: 2, avatar: '⚡', nickname: 'QuickWin', points: 2420 },
-    { rank: 3, avatar: '🎯', nickname: 'TargetMaster', points: 2100 },
-    { rank: 4, avatar: '🎨', nickname: 'CreativeOne', points: 1950 },
-    { rank: 5, avatar: '🎭', nickname: 'ShowTime', points: 1820 },
-    { rank: 6, avatar: '🎪', nickname: 'CircusKing', points: 1680 },
-    { rank: 7, avatar: '🎬', nickname: 'DirectorX', points: 1540 },
-    { rank: 8, avatar: '🎸', nickname: 'RockStar', points: 1410 },
-    { rank: 9, avatar: '🎲', nickname: 'LuckyDice', points: 1290 },
-    { rank: 10, avatar: '🌊', nickname: currentUserNickname, points: 1240, isCurrentUser: true },
-  ];
+export function Leaderboard({ user, currentUserNickname, currentUserAvatar, userRank, refreshRank }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [topUsers, setTopUsers] = useState([]);
 
-  const currentUserRank = 14;
-  const currentUserPoints = 1240;
+  useEffect(() => {
+    let cancelled = false;
+    if (!refreshRank) {
+      setIsLoading(false);
+      return;
+    }
+    refreshRank(10).then((data) => {
+      if (cancelled) return;
+      setTopUsers(data?.top ?? []);
+      setIsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshRank]);
+
+  const leaderboardData = topUsers.map((u, idx) => ({
+    rank: idx + 1,
+    avatar: u.emoji,
+    nickname: u.username,
+    points: u.total_points,
+    isCurrentUser: u.id === user?.id,
+  }));
+
+  const currentUserRank = userRank ?? '—';
+  const currentUserPoints = user?.total_points ?? 0;
 
   const topThree = leaderboardData.slice(0, 3);
   const restOfList = leaderboardData.slice(3);
@@ -96,10 +109,16 @@ export function Leaderboard({ currentUserNickname, currentUserAvatar }) {
 
       {isLoading ? (
         <LeaderboardSkeleton />
+      ) : leaderboardData.length === 0 ? (
+        <div className="px-4 py-12 text-center">
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+            No leaderboard data yet — be the first to score points!
+          </p>
+        </div>
       ) : (
         <div className="px-4 py-6 space-y-6">
-          {/* Top 3 Podium */}
-        <div className="flex items-end justify-center gap-3 pb-8">
+          {topThree.length === 3 && (
+          <div className="flex items-end justify-center gap-3 pb-8">
           {/* Rank 2 - Left */}
           <div className="flex-1 flex flex-col items-center">
             <div
@@ -218,6 +237,7 @@ export function Leaderboard({ currentUserNickname, currentUserAvatar }) {
           </div>
         </div>
 
+        )}
         {/* Ranked List 4-10 */}
         <div className="rounded-2xl overflow-hidden">
           {restOfList.map((user, index) => {

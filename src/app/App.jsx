@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BottomNav } from './components/BottomNav';
 import { Onboarding } from './components/Onboarding';
 import { Homepage } from './components/Homepage';
@@ -6,27 +6,90 @@ import { Hunt } from './components/Hunt';
 import { Leaderboard } from './components/Leaderboard';
 import { Profile } from './components/Profile';
 import { Scanner } from './components/Scanner';
+import { SuccessSnackbar } from './components/SuccessSnackbar';
+import api from '../lib/api';
+
+const persistUser = (u) => {
+  if (u) localStorage.setItem('hr_user', JSON.stringify(u));
+  else localStorage.removeItem('hr_user');
+};
 
 export default function App() {
-  const [isOnboarding, setIsOnboarding] = useState(true);
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('hr_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [userRank, setUserRank] = useState(null);
+  const [isOnboarding, setIsOnboarding] = useState(!user);
+  const [onboardingError, setOnboardingError] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
   const [showScanner, setShowScanner] = useState(false);
   const [showUIStates, setShowUIStates] = useState(false);
-  const [userNickname] = useState('Alex');
-  const [userAvatar] = useState('🌊');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', points: 0 });
 
-  const handleScan = () => {
-    setShowScanner(true);
+  const userNickname = user?.username ?? 'Alex';
+  const userAvatar = user?.emoji ?? '🌊';
+  const userQrToken = user?.qr_token;
+
+  const refreshUser = useCallback(async () => {
+    if (!user?.qr_token) return;
+    try {
+      const { data } = await api.post('/auth/badge', { token: user.qr_token });
+      const fresh = data.user;
+      setUser(fresh);
+      persistUser(fresh);
+    } catch {
+      // silent — keep cached user
+    }
+  }, [user?.qr_token]);
+
+  const refreshRank = useCallback(async (top = 0) => {
+    if (!user?.id) return null;
+    try {
+      const { data } = await api.get(`/user/rank?userId=${user.id}${top ? `&top=${top}` : ''}`);
+      setUserRank(data.rank);
+      return data;
+    } catch {
+      return null;
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    refreshUser();
+    refreshRank();
+  }, [user?.id, activeTab]);
+
+  const handleScan = () => setShowScanner(true);
+
+  const handleOnboardingComplete = async ({ nickname, emoji }) => {
+    setOnboardingError(null);
+    try {
+      const { data } = await api.post('/user/create', { username: nickname, emoji });
+      setUser(data.user);
+      persistUser(data.user);
+      setIsOnboarding(false);
+    } catch (err) {
+      setOnboardingError(err.response?.data?.error || 'Could not register. Please try again.');
+    }
   };
 
-  const handleScanFriend = () => {
-    console.log('Scanning friend code');
-    setShowScanner(false);
+  const handlePairSuccess = (data) => {
+    setSnackbar({
+      open: true,
+      message: `Paired with @${data.partner?.name ?? 'attendee'}!`,
+      points: data.points ?? 0,
+    });
+    refreshUser();
+    refreshRank();
   };
 
-  const handleScanMission = () => {
-    console.log('Scanning mission code');
-    setShowScanner(false);
+  const handleChallengeFound = (data) => {
+    setSnackbar({
+      open: true,
+      message: data.title || 'Challenge found',
+      points: data.points ?? 0,
+    });
   };
 
   const renderScreen = () => {
@@ -36,15 +99,47 @@ export default function App() {
 
     switch (activeTab) {
       case 'home':
-        return <Homepage userNickname={userNickname} userAvatar={userAvatar} />;
+        return (
+          <Homepage
+            user={user}
+            userNickname={userNickname}
+            userAvatar={userAvatar}
+            userRank={userRank}
+            onOpenScanner={handleScan}
+          />
+        );
       case 'hunt':
         return <Hunt />;
       case 'leaderboard':
-        return <Leaderboard currentUserNickname={userNickname} currentUserAvatar={userAvatar} />;
+        return (
+          <Leaderboard
+            user={user}
+            currentUserNickname={userNickname}
+            currentUserAvatar={userAvatar}
+            userRank={userRank}
+            refreshRank={refreshRank}
+          />
+        );
       case 'profile':
-        return <Profile userNickname={userNickname} userAvatar={userAvatar} />;
+        return (
+          <Profile
+            user={user}
+            userNickname={userNickname}
+            userAvatar={userAvatar}
+            userQrToken={userQrToken}
+            userRank={userRank}
+          />
+        );
       default:
-        return <Homepage userNickname={userNickname} userAvatar={userAvatar} />;
+        return (
+          <Homepage
+            user={user}
+            userNickname={userNickname}
+            userAvatar={userAvatar}
+            userRank={userRank}
+            onOpenScanner={handleScan}
+          />
+        );
     }
   };
 
@@ -52,7 +147,7 @@ export default function App() {
     <div className="dark min-h-screen w-full flex justify-center bg-surface-1">
       <div className="w-full max-w-[390px] min-h-screen bg-surface-1 relative">
         {isOnboarding ? (
-         <Onboarding onComplete={() => setIsOnboarding(false)} />
+         <Onboarding onComplete={handleOnboardingComplete} error={onboardingError} />
         ) : (
           <>
             {renderScreen()}
@@ -83,10 +178,18 @@ export default function App() {
         {showScanner && (
           <Scanner
             onClose={() => setShowScanner(false)}
-            onScanFriend={handleScanFriend}
-            onScanMission={handleScanMission}
+            userId={user?.id}
+            onPairSuccess={handlePairSuccess}
+            onChallengeFound={handleChallengeFound}
           />
         )}
+
+        <SuccessSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          points={snackbar.points}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        />
       </div>
     </div>
   );

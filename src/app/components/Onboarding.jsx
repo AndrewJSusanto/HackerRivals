@@ -14,13 +14,14 @@ const avatarOptions = [
   { id: 10, emoji: '🎲', color: '#FDCB6E' },
 ];
 
-export function Onboarding() {
+export function Onboarding({ onComplete, error }) {
   const [nickname, setNickname] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(null);
 
   const handleJoin = () => {
     if (nickname && selectedAvatar !== null) {
-      console.log('Joining with:', { nickname, avatar: selectedAvatar });
+      const emoji = avatarOptions.find((a) => a.id === selectedAvatar)?.emoji;
+      onComplete?.({ nickname, emoji });
     }
   };
 
@@ -131,6 +132,14 @@ export function Onboarding() {
 
       {/* Join Button */}
       <div className="w-full mt-auto">
+        {error && (
+          <p
+            className="text-center mb-3"
+            style={{ color: '#ff6b6b', fontSize: '14px' }}
+          >
+            {error}
+          </p>
+        )}
         <Button
           fullWidth
           variant="contained"

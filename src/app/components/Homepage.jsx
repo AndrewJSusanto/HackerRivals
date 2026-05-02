@@ -1,41 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LinearProgress } from '@mui/material';
 import { SuccessSnackbar } from './SuccessSnackbar';
+import api from '../../lib/api';
 
-export function Homepage({ userNickname, userAvatar }) {
+const TYPE_ICONS = {
+  booth: 'corporate_fare',
+  quiz: 'quiz',
+  photo: 'photo_camera',
+  social: 'groups',
+};
+
+const GOLD_THRESHOLD = 1500;
+
+export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScanner }) {
+  const totalPoints = user?.total_points ?? 0;
+  const friendsMetCount = user?.paired_users?.length ?? 0;
+  const remainingToGold = Math.max(0, GOLD_THRESHOLD - totalPoints);
+  const goldProgress = Math.min(100, (totalPoints / GOLD_THRESHOLD) * 100);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
   });
-  const missions = [
-    {
-      id: 1,
-      icon: 'forum',
-      title: 'Attend a Workshop',
-      description: 'Join any session in the Innovation Track',
-      points: 150,
-    },
-    {
-      id: 2,
-      icon: 'corporate_fare',
-      title: 'Visit 3 Sponsor Booths',
-      description: 'Chat with sponsors and learn about their products',
-      points: 200,
-    },
-    {
-      id: 3,
-      icon: 'share',
-      title: 'Share on Social',
-      description: 'Post about Cloud Summit with #CloudSummit2026',
-      points: 75,
-    },
-  ];
+  const [missions, setMissions] = useState([]);
+  const [missionsLoading, setMissionsLoading] = useState(true);
 
-  const friendsMet = [
-    { avatar: '🎯' },
-    { avatar: '🚀' },
-    { avatar: '⚡' },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/challenges')
+      .then((res) => {
+        if (cancelled) return;
+        setMissions(res.data?.challenges ?? []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMissions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMissionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   return (
     <div
@@ -115,7 +123,7 @@ export function Homepage({ userNickname, userAvatar }) {
                 fontWeight: 500,
               }}
             >
-              1,240 pts
+              {totalPoints.toLocaleString()} pts
             </h1>
           </div>
 
@@ -123,12 +131,14 @@ export function Homepage({ userNickname, userAvatar }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                260 pts to Gold Tier
+                {remainingToGold > 0
+                  ? `${remainingToGold.toLocaleString()} pts to Gold Tier`
+                  : 'Gold Tier reached'}
               </span>
             </div>
             <LinearProgress
               variant="determinate"
-              value={65}
+              value={goldProgress}
               sx={{
                 height: 8,
                 borderRadius: 4,
@@ -143,7 +153,11 @@ export function Homepage({ userNickname, userAvatar }) {
 
           {/* Rank */}
           <p className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-            You're ranked <span style={{ color: 'var(--ocean-blue)', fontWeight: 500 }}>#14</span>
+            {userRank ? (
+              <>You're ranked <span style={{ color: 'var(--ocean-blue)', fontWeight: 500 }}>#{userRank}</span></>
+            ) : (
+              <span style={{ color: 'var(--text-muted)' }}>Loading rank…</span>
+            )}
           </p>
         </div>
 
@@ -184,36 +198,13 @@ export function Homepage({ userNickname, userAvatar }) {
 
           {/* Friends Progress */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                {friendsMet.length} friends met
-              </span>
-              <div className="flex -space-x-2">
-                {friendsMet.map((friend, idx) => (
-                  <div
-                    key={idx}
-                    className="w-8 h-8 rounded-full flex items-center justify-center border-2"
-                    style={{
-                      backgroundColor: 'var(--surface-4)',
-                      borderColor: 'var(--surface-3)',
-                      fontSize: '16px',
-                    }}
-                  >
-                    {friend.avatar}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              {friendsMetCount} {friendsMetCount === 1 ? 'friend' : 'friends'} met
+            </span>
           </div>
 
           <button
-            onClick={() =>
-              setSnackbar({
-                open: true,
-                message: 'You connected with Taylor!',
-                points: 100,
-              })
-            }
+            onClick={onOpenScanner}
             className="w-full py-3 rounded-lg transition-colors"
             style={{
               backgroundColor: 'rgba(61, 120, 171, 0.15)',
@@ -229,59 +220,76 @@ export function Homepage({ userNickname, userAvatar }) {
         {/* Active Missions Section */}
         <div>
           <h3 className="mb-4 px-1">Active Missions</h3>
-          <div className="space-y-3">
-            {missions.map((mission) => (
-              <div
-                key={mission.id}
-                className="rounded-2xl p-5"
-                style={{
-                  backgroundColor: 'var(--surface-3)',
-                  border: '1px solid var(--border-color)',
-                }}
-              >
-                <div className="flex gap-3 mb-4">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: 'var(--surface-4)' }}
-                  >
-                    <span className="material-symbols-rounded" style={{ color: 'var(--ocean-blue)', fontSize: '24px' }}>
-                      {mission.icon}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="leading-tight">{mission.title}</h3>
-                      <span
-                        className="px-2 py-1 rounded-full flex-shrink-0"
-                        style={{
-                          backgroundColor: 'rgba(254, 193, 78, 0.15)',
-                          color: 'var(--golden-amber)',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                        }}
-                      >
-                        +{mission.points}
-                      </span>
-                    </div>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
-                      {mission.description}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  className="w-full py-3 rounded-lg transition-colors"
+          {missionsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl p-5 animate-pulse"
                   style={{
-                    backgroundColor: 'rgba(61, 120, 171, 0.15)',
-                    color: 'var(--ocean-blue)',
-                    fontWeight: 500,
-                    minHeight: '44px',
+                    backgroundColor: 'var(--surface-3)',
+                    border: '1px solid var(--border-color)',
+                    height: '140px',
+                  }}
+                />
+              ))}
+            </div>
+          ) : missions.length === 0 ? (
+            <div
+              className="rounded-2xl p-6 text-center"
+              style={{
+                backgroundColor: 'var(--surface-3)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                No active missions right now. Check back soon!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {missions.map((mission) => (
+                <div
+                  key={mission.id}
+                  className="rounded-2xl p-5"
+                  style={{
+                    backgroundColor: 'var(--surface-3)',
+                    border: '1px solid var(--border-color)',
                   }}
                 >
-                  Start
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div className="flex gap-3 mb-4">
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: 'var(--surface-4)' }}
+                    >
+                      <span className="material-symbols-rounded" style={{ color: 'var(--ocean-blue)', fontSize: '24px' }}>
+                        {TYPE_ICONS[mission.type] || 'flag'}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="leading-tight">{mission.title}</h3>
+                        <span
+                          className="px-2 py-1 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor: 'rgba(254, 193, 78, 0.15)',
+                            color: 'var(--golden-amber)',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                          }}
+                        >
+                          +{mission.points}
+                        </span>
+                      </div>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+                        {mission.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

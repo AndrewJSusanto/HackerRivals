@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     size: 100,
     query: { term: { active: true } },
     sort: [{ type: 'asc' }, { points: 'desc' }],
-    _source: ['type', 'title', 'description', 'points', 'code'],
+    _source: ['type', 'title_en', 'title_fr', 'description_en', 'description_fr', 'points', 'code'],
   })
 
   const challenges = result.hits.hits.map(h => ({

@@ -93,10 +93,6 @@ export default function App() {
   };
 
   const renderScreen = () => {
-    // if (showUIStates) {
-    //   return <UIStatesDemo />;
-    // }
-
     switch (activeTab) {
       case 'home':
         return (
@@ -151,7 +147,7 @@ export default function App() {
         ) : (
           <>
             {renderScreen()}
-            {!showUIStates && (
+            {(
               <BottomNav
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -160,20 +156,6 @@ export default function App() {
             )}
           </>
         )}
-
-        {/* Debug Toggle for UI States */}
-        <button
-          onClick={() => setShowUIStates(!showUIStates)}
-          className="fixed top-4 left-4 z-50 px-3 py-1 rounded-full text-xs"
-          style={{
-            backgroundColor: showUIStates ? 'var(--golden-amber)' : 'var(--ocean-blue)',
-            color: showUIStates ? '#000000' : '#ffffff',
-            fontWeight: 500,
-          }}
-        >
-          {showUIStates ? 'Exit Demo' : 'UI States'}
-        </button>
-
         {/* Scanner Overlay */}
         {showScanner && (
           <Scanner

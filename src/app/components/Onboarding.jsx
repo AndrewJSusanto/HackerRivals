@@ -14,10 +14,39 @@ const avatarOptions = [
   { id: 10, emoji: '🎲', color: '#FDCB6E' },
 ];
 
+export function Onboarding({ onComplete }) {
 export function Onboarding({ onComplete, error }) {
   const [nickname, setNickname] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  const selectedEmoji = avatarOptions.find((a) => a.id === selectedAvatar)?.emoji;
+
+  const handleJoin = async () => {
+    if (!nickname || selectedAvatar === null) return;
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/user/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: nickname, 
+          emoji: selectedEmoji 
+        }),
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to create user')
+      }
+      
+      const { user } = await response.json()
+      onComplete({ username: nickname, emoji: selectedEmoji });
+    } catch (err) {
+      setError(err.message || 'Something went wrong')
+      setLoading(false)
   const handleJoin = () => {
     if (nickname && selectedAvatar !== null) {
       const emoji = avatarOptions.find((a) => a.id === selectedAvatar)?.emoji;
@@ -45,11 +74,7 @@ export function Onboarding({ onComplete, error }) {
             </span>
             <span
               className="tracking-wide"
-              style={{
-                fontSize: '24px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-              }}
+              style={{ fontSize: '24px', fontWeight: 500, color: 'var(--text-primary)' }}
             >
               CLOUD SUMMIT
             </span>
@@ -70,26 +95,26 @@ export function Onboarding({ onComplete, error }) {
           variant="outlined"
           label="Your nickname"
           value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
+          onChange={(e) => {
+            setNickname(e.target.value);
+            setError('');
+          }}
+          error={!!error}
+          helperText={error}
           sx={{
             '& .MuiOutlinedInput-root': {
               backgroundColor: 'var(--surface-2)',
               color: 'var(--text-primary)',
-              '& fieldset': {
-                borderColor: 'var(--border-color)',
-              },
-              '&:hover fieldset': {
-                borderColor: 'var(--ocean-blue)',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'var(--ocean-blue)',
-              },
+              '& fieldset': { borderColor: 'var(--border-color)' },
+              '&:hover fieldset': { borderColor: 'var(--ocean-blue)' },
+              '&.Mui-focused fieldset': { borderColor: 'var(--ocean-blue)' },
             },
             '& .MuiInputLabel-root': {
               color: 'var(--text-secondary)',
-              '&.Mui-focused': {
-                color: 'var(--ocean-blue)',
-              },
+              '&.Mui-focused': { color: 'var(--ocean-blue)' },
+            },
+            '& .MuiFormHelperText-root': {
+              color: '#e74c3c',
             },
           }}
         />
@@ -113,9 +138,7 @@ export function Onboarding({ onComplete, error }) {
                   height: '64px',
                   minWidth: '64px',
                   backgroundColor: 'var(--surface-3)',
-                  border: isSelected
-                    ? '3px solid var(--ocean-blue)'
-                    : '2px solid var(--border-color)',
+                  border: isSelected ? '3px solid var(--ocean-blue)' : '2px solid var(--border-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -144,7 +167,7 @@ export function Onboarding({ onComplete, error }) {
           fullWidth
           variant="contained"
           onClick={handleJoin}
-          disabled={!nickname || selectedAvatar === null}
+          disabled={!nickname || selectedAvatar === null || loading}
           sx={{
             backgroundColor: 'var(--ocean-blue)',
             color: '#ffffff',
@@ -154,28 +177,18 @@ export function Onboarding({ onComplete, error }) {
             padding: '14px',
             borderRadius: '8px',
             minHeight: '48px',
-            '&:hover': {
-              backgroundColor: '#2F5F8A',
-            },
+            '&:hover': { backgroundColor: '#2F5F8A' },
             '&.Mui-disabled': {
               backgroundColor: 'var(--surface-4)',
               color: 'var(--text-muted)',
             },
-            '&:focus-visible': {
-              outline: '2px solid var(--ocean-blue)',
-              outlineOffset: '2px',
-            },
           }}
         >
-          Join the Hunt
+          {loading ? 'Joining…' : 'Join the Hunt'}
         </Button>
         <p
           className="text-center mt-3"
-          style={{
-            fontSize: 'var(--text-caption)',
-            color: 'var(--text-muted)',
-            lineHeight: 1.4,
-          }}
+          style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)', lineHeight: 1.4 }}
         >
           By joining you agree to the event community guidelines
         </p>

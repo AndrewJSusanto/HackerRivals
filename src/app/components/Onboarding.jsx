@@ -15,7 +15,6 @@ const avatarOptions = [
 ];
 
 export function Onboarding({ onComplete }) {
-export function Onboarding({ onComplete, error }) {
   const [nickname, setNickname] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [error, setError] = useState('');
@@ -47,10 +46,6 @@ export function Onboarding({ onComplete, error }) {
     } catch (err) {
       setError(err.message || 'Something went wrong')
       setLoading(false)
-  const handleJoin = () => {
-    if (nickname && selectedAvatar !== null) {
-      const emoji = avatarOptions.find((a) => a.id === selectedAvatar)?.emoji;
-      onComplete?.({ nickname, emoji });
     }
   };
 

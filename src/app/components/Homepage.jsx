@@ -11,7 +11,6 @@ const TYPE_ICONS = {
 };
 
 export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScanner }) {
-  console.log(user)
   const totalPoints = user?.total_points ?? 0;
   const [snackbar, setSnackbar] = useState({
     open: false,

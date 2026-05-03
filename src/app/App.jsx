@@ -34,17 +34,19 @@ export default function App() {
 
   const refreshUser = useCallback(async () => {
     if (!user?.qr_token) return;
+
     try {
-      const { data } = await api.post('/auth/badge', { token: user.qr_token });
+      const { data } = await api.post('/auth/badge', {
+        token: user.qr_token,
+      });
+
       const fresh = data.user;
       if (!fresh?.id) return;
-      setUser(prev => ({
-        ...prev,
-        ...fresh,
-      }));
-      persistUser(fresh);
+
+      setUser(fresh);           // ✅ replace fully, do NOT merge
+      persistUser(fresh);       // ✅ persist full source of truth
     } catch {
-      // silent — keep cached user
+      // silent
     }
   }, [user?.qr_token]);
 
@@ -53,6 +55,7 @@ export default function App() {
     try {
       const { data } = await api.get(`/user/rank?userId=${user.id}${top ? `&top=${top}` : ''}`);
       setUserRank(data.rank);
+      console.log('REFRESH RANK:', data);
       return data;
     } catch {
       return null;

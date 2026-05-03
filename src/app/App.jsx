@@ -162,6 +162,15 @@ export default function App() {
     });
   };
 
+  const logoutUser = () => {
+    setUser(null);
+    persistUser(null);
+    setUserRank(null);
+    setActiveTab('home');
+    setShowScanner(false);
+    localStorage.removeItem('hr_user');
+  };
+
   if (!authReady) return null; // or loading screen
 
   const renderScreen = () => {
@@ -198,6 +207,7 @@ export default function App() {
             userAvatar={userAvatar}
             userQrToken={userQrToken}
             userRank={userRank}
+            onLogout={logoutUser}
           />
         );
       default:

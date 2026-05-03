@@ -1,6 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 
-export function Profile({ user, userNickname, userAvatar, userQrToken, userRank }) {
+export function Profile({ user, userNickname, userAvatar, userQrToken, userRank, onLogout }) {
   const totalPoints = user?.total_points ?? 0;
   const completedChallenges = (user?.completed_challenges ?? []);
   const stats = {
@@ -209,6 +209,21 @@ export function Profile({ user, userNickname, userAvatar, userQrToken, userRank 
               {userQrToken}
             </p>
           )}
+        </div>
+
+        <div className="px-4 mt-6">
+          <button
+            onClick={onLogout}
+            className="w-full py-3 rounded-lg"
+            style={{
+              backgroundColor: 'rgba(231, 76, 60, 0.12)',
+              color: '#e74c3c',
+              fontWeight: 500,
+              minHeight: '44px',
+            }}
+          >
+            Log out
+          </button>
         </div>
       </div>
     </div>

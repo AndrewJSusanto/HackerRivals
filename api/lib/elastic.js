@@ -97,9 +97,9 @@ export async function awardPairing(scannerId, targetId, points) {
   const pairScript = {
     source: `
       ctx._source.total_points += params.points;
-      if (ctx._source.paired_users == null) ctx._source.paired_users = [];
-      if (!ctx._source.paired_users.contains(params.otherId)) {
-        ctx._source.paired_users.add(params.otherId);
+      if (ctx._source.friends_met == null) ctx._source.friends_met = [];
+      if (!ctx._source.friends_met.contains(params.otherId)) {
+        ctx._source.friends_met.add(params.otherId);
       }
     `,
   }

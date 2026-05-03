@@ -40,6 +40,7 @@ export default async function handler(req, res) {
       qr_token,
       total_points: 0,
       completed_challenges: [],
+      friends_met: [],
       created_at: new Date(),
     },
   })

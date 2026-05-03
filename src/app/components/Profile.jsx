@@ -1,32 +1,13 @@
 import { QRCodeSVG } from 'qrcode.react';
 
-const LOGIN_SENTINEL = '__first_login__';
-
 export function Profile({ user, userNickname, userAvatar, userQrToken, userRank }) {
   const totalPoints = user?.total_points ?? 0;
-  const completedChallenges = (user?.completed_challenges ?? []).filter(
-    (c) => c !== LOGIN_SENTINEL
-  );
+  const completedChallenges = (user?.completed_challenges ?? []);
   const stats = {
     missionsDone: completedChallenges.length,
     currentRank: userRank ?? '—',
-    friendsMet: user?.paired_users?.length ?? 0,
+    friendsMet: user?.friends_met?.length ?? 0,
   };
-
-  const achievements = [
-    { id: '1', icon: 'qr_code_scanner', label: 'First Scan', earned: true },
-    { id: '2', icon: 'corporate_fare', label: 'Booth Explorer', earned: true },
-    { id: '3', icon: 'share', label: 'Social Butterfly', earned: true },
-    { id: '4', icon: 'trophy', label: 'Top 10', earned: false },
-    { id: '5', icon: 'diversity_3', label: 'Team Player', earned: true },
-    { id: '6', icon: 'star', label: 'Rising Star', earned: false },
-  ];
-
-  const completedMissions = [
-    { id: 1, name: 'Share the Summit', points: 75, completedAt: '2 hours ago' },
-    { id: 2, name: 'Attend a Workshop', points: 150, completedAt: '5 hours ago' },
-    { id: 3, name: 'Meet 5 Friends', points: 500, completedAt: 'Yesterday' },
-  ];
 
   return (
     <div
@@ -145,52 +126,6 @@ export function Profile({ user, userNickname, userAvatar, userQrToken, userRank 
           </div>
         </div>
 
-        {/* Achievements Section */}
-        <div>
-          <h3 className="mb-4 px-1">Achievements</h3>
-          <div className="grid grid-cols-3 gap-4">
-            {achievements.map((achievement) => (
-              <div
-                key={achievement.id}
-                className="flex flex-col items-center text-center p-3 rounded-xl"
-                style={{
-                  backgroundColor: 'var(--surface-2)',
-                  border: `1px solid ${achievement.earned ? 'var(--ocean-blue)' : 'var(--border-color)'}`,
-                  opacity: achievement.earned ? 1 : 0.4,
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
-                  style={{
-                    backgroundColor: achievement.earned
-                      ? 'rgba(61, 120, 171, 0.15)'
-                      : 'var(--surface-4)',
-                  }}
-                >
-                  <span
-                    className="material-symbols-rounded"
-                    style={{
-                      fontSize: '28px',
-                      color: achievement.earned ? 'var(--ocean-blue)' : 'var(--text-muted)',
-                    }}
-                  >
-                    {achievement.icon}
-                  </span>
-                </div>
-                <p
-                  style={{
-                    fontSize: '12px',
-                    color: achievement.earned ? 'var(--text-primary)' : 'var(--text-muted)',
-                    fontWeight: achievement.earned ? 500 : 400,
-                  }}
-                >
-                  {achievement.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Completed Missions */}
         <div>
           <h3 className="mb-4 px-1">Completed Missions</h3>
@@ -201,13 +136,13 @@ export function Profile({ user, userNickname, userAvatar, userQrToken, userRank 
               border: '1px solid var(--border-color)',
             }}
           >
-            {completedMissions.map((mission, index) => (
+            {completedChallenges.map((mission, index) => (
               <div
                 key={mission.id}
                 className="px-4 py-3"
                 style={{
                   borderBottom:
-                    index < completedMissions.length - 1
+                    index < completedChallenges.length - 1
                       ? '0.5px solid var(--border-color)'
                       : 'none',
                 }}

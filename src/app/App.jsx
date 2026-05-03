@@ -21,7 +21,8 @@ export default function App() {
   // });
   const [user, setUser] = useState(null);
   const [userRank, setUserRank] = useState(null);
-  const [isOnboarding, setIsOnboarding] = useState(!user?.id);
+  const showOnboarding = !user?.id;
+  const [authReady, setAuthReady] = useState(false);
   const [onboardingError, setOnboardingError] = useState(null);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
@@ -32,30 +33,60 @@ export default function App() {
   const userAvatar = user?.emoji ?? '🌊';
   const userQrToken = user?.qr_token;
 
-  const refreshUser = useCallback(async () => {
-    if (!user?.qr_token) return;
+  useEffect(() => {
+    const saved = localStorage.getItem('hr_user');
+
+    if (!saved) {
+      setAuthReady(true);
+      return;
+    }
+
+    const parsed = JSON.parse(saved);
+
+    const rehydrate = async () => {
+      try {
+        const { data } = await api.post('/auth/badge', {
+          token: parsed.qr_token,
+        });
+
+        setUser(data.user || null);
+        persistUser(data.user || null);
+      } catch {
+        setUser(null);
+        persistUser(null);
+      } finally {
+        setAuthReady(true);
+      }
+    };
+
+    rehydrate();
+  }, []);
+
+  const refreshUser = useCallback(async (token) => {
+    if (!token) return;
 
     try {
       const { data } = await api.post('/auth/badge', {
-        token: user.qr_token,
+        token,
       });
 
-      const fresh = data.user;
-      if (!fresh?.id) return;
+      const freshUser = data?.user;
+      if (!freshUser?.id) return;
 
-      setUser(fresh);           // ✅ replace fully, do NOT merge
-      persistUser(fresh);       // ✅ persist full source of truth
-    } catch {
-      // silent
+      setUser(freshUser);
+      persistUser(freshUser);
+
+    } catch (err) {
+      console.error('refreshUser failed:', err);
     }
-  }, [user?.qr_token]);
+  }, []);
 
   const refreshRank = useCallback(async (top = 0) => {
     if (!user?.id) return null;
     try {
       const { data } = await api.get(`/user/rank?userId=${user.id}${top ? `&top=${top}` : ''}`);
       setUserRank(data.rank);
-      console.log('REFRESH RANK:', data);
+      // console.log('REFRESH RANK:', data);
       return data;
     } catch {
       return null;
@@ -64,7 +95,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user?.id) return;
-    refreshUser();
+    refreshUser(user?.qr_token);
   }, [user?.id]);
 
   useEffect(() => {
@@ -104,7 +135,6 @@ export default function App() {
       // ✅ success case
       setUser(data.user);
       persistUser(data.user);
-      setIsOnboarding(false);
 
     } catch (err) {
       // only runs for network issues
@@ -120,7 +150,7 @@ export default function App() {
       message: `Paired with @${data.partner?.name ?? 'attendee'}!`,
       points: data.points ?? 0,
     });
-    refreshUser();
+    refreshUser(user?.qr_token);
     refreshRank();
   };
 
@@ -131,6 +161,8 @@ export default function App() {
       points: data.points ?? 0,
     });
   };
+
+  if (!authReady) return null; // or loading screen
 
   const renderScreen = () => {
     // console.log('NEW USER:', user);
@@ -184,7 +216,7 @@ export default function App() {
   return (
     <div className="dark min-h-screen w-full flex justify-center bg-surface-1">
       <div className="w-full max-w-[390px] min-h-screen bg-surface-1 relative">
-        {isOnboarding ? (
+        {showOnboarding ? (
           <Onboarding
             onComplete={handleOnboardingComplete}
             error={onboardingError}

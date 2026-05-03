@@ -15,16 +15,17 @@ const persistUser = (u) => {
 };
 
 export default function App() {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('hr_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // const [user, setUser] = useState(() => {
+  //   const saved = localStorage.getItem('hr_user');
+  //   return saved ? JSON.parse(saved) : null;
+  // });
+  const [user, setUser] = useState(null);
   const [userRank, setUserRank] = useState(null);
-  const [isOnboarding, setIsOnboarding] = useState(!user);
+  const [isOnboarding, setIsOnboarding] = useState(!user?.id);
   const [onboardingError, setOnboardingError] = useState(null);
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [showScanner, setShowScanner] = useState(false);
-  const [showUIStates, setShowUIStates] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', points: 0 });
 
   const userNickname = user?.username ?? 'Alex';
@@ -36,7 +37,11 @@ export default function App() {
     try {
       const { data } = await api.post('/auth/badge', { token: user.qr_token });
       const fresh = data.user;
-      setUser(fresh);
+      if (!fresh?.id) return;
+      setUser(prev => ({
+        ...prev,
+        ...fresh,
+      }));
       persistUser(fresh);
     } catch {
       // silent — keep cached user
@@ -57,6 +62,10 @@ export default function App() {
   useEffect(() => {
     if (!user?.id) return;
     refreshUser();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
     refreshRank();
   }, [user?.id, activeTab]);
 
@@ -64,13 +73,41 @@ export default function App() {
 
   const handleOnboardingComplete = async ({ nickname, emoji }) => {
     setOnboardingError(null);
+    setOnboardingLoading(true);
+
     try {
-      const { data } = await api.post('/user/create', { username: nickname, emoji });
+      const response = await fetch('/api/user/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: nickname,
+          emoji: emoji
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message = data?.error || '';
+
+        if (message.toLowerCase().includes('username')) {
+          setOnboardingError('That nickname is already taken. Try another.');
+        } else {
+          setOnboardingError('Could not register. Please try again.');
+        }
+        return; // 🚨 stop execution
+      }
+
+      // ✅ success case
       setUser(data.user);
       persistUser(data.user);
       setIsOnboarding(false);
+
     } catch (err) {
-      setOnboardingError(err.response?.data?.error || 'Could not register. Please try again.');
+      // only runs for network issues
+      setOnboardingError('Network error. Please try again.');
+    } finally {
+      setOnboardingLoading(false);
     }
   };
 
@@ -93,6 +130,7 @@ export default function App() {
   };
 
   const renderScreen = () => {
+    // console.log('NEW USER:', user);
     switch (activeTab) {
       case 'home':
         return (
@@ -105,7 +143,8 @@ export default function App() {
           />
         );
       case 'hunt':
-        return <Hunt />;
+        return <Hunt
+          onOpenScanner={handleScan} />;
       case 'leaderboard':
         return (
           <Leaderboard
@@ -143,7 +182,11 @@ export default function App() {
     <div className="dark min-h-screen w-full flex justify-center bg-surface-1">
       <div className="w-full max-w-[390px] min-h-screen bg-surface-1 relative">
         {isOnboarding ? (
-         <Onboarding onComplete={handleOnboardingComplete} error={onboardingError} />
+          <Onboarding
+            onComplete={handleOnboardingComplete}
+            error={onboardingError}
+            loading={onboardingLoading}
+          />
         ) : (
           <>
             {renderScreen()}

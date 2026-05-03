@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { LinearProgress } from '@mui/material';
 import { SuccessSnackbar } from './SuccessSnackbar';
+import { MeetNewFriendsCard } from './MeetNewFriendsCard';
 import api from '../../lib/api';
 
 const TYPE_ICONS = {
@@ -10,13 +10,9 @@ const TYPE_ICONS = {
   social: 'groups',
 };
 
-const GOLD_THRESHOLD = 1500;
-
 export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScanner }) {
+  console.log(user)
   const totalPoints = user?.total_points ?? 0;
-  const friendsMetCount = user?.paired_users?.length ?? 0;
-  const remainingToGold = Math.max(0, GOLD_THRESHOLD - totalPoints);
-  const goldProgress = Math.min(100, (totalPoints / GOLD_THRESHOLD) * 100);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -43,7 +39,6 @@ export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScann
       cancelled = true;
     };
   }, []);
-
 
   return (
     <div
@@ -127,30 +122,6 @@ export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScann
             </h1>
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                {remainingToGold > 0
-                  ? `${remainingToGold.toLocaleString()} pts to Gold Tier`
-                  : 'Gold Tier reached'}
-              </span>
-            </div>
-            <LinearProgress
-              variant="determinate"
-              value={goldProgress}
-              sx={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: 'var(--surface-4)',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: 'var(--ocean-blue)',
-                  borderRadius: 4,
-                },
-              }}
-            />
-          </div>
-
           {/* Rank */}
           <p className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
             {userRank ? (
@@ -159,62 +130,6 @@ export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScann
               <span style={{ color: 'var(--text-muted)' }}>Loading rank…</span>
             )}
           </p>
-        </div>
-
-        {/* Meet Friends Card */}
-        <div
-          className="rounded-2xl p-5 space-y-4"
-          style={{
-            backgroundColor: 'var(--surface-3)',
-            borderLeft: '4px solid var(--ocean-blue)',
-          }}
-        >
-          <div className="flex items-start gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: 'var(--surface-4)' }}
-            >
-              <span className="material-symbols-rounded" style={{ color: 'var(--ocean-blue)', fontSize: '24px' }}>
-                handshake
-              </span>
-            </div>
-            <div className="flex-1">
-              <h3 className="mb-2">Meet Friends</h3>
-              <p className="mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
-                Scan another attendee's QR code to connect and earn points
-              </p>
-              <span
-                className="inline-block px-3 py-1 rounded-full text-xs mb-3"
-                style={{
-                  backgroundColor: 'rgba(254, 193, 78, 0.15)',
-                  color: 'var(--golden-amber)',
-                  fontWeight: 500,
-                }}
-              >
-                +100 pts per friend
-              </span>
-            </div>
-          </div>
-
-          {/* Friends Progress */}
-          <div className="flex items-center justify-between">
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-              {friendsMetCount} {friendsMetCount === 1 ? 'friend' : 'friends'} met
-            </span>
-          </div>
-
-          <button
-            onClick={onOpenScanner}
-            className="w-full py-3 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'rgba(61, 120, 171, 0.15)',
-              color: 'var(--ocean-blue)',
-              fontWeight: 500,
-              minHeight: '44px',
-            }}
-          >
-            Scan a Friend
-          </button>
         </div>
 
         {/* Active Missions Section */}
@@ -248,6 +163,7 @@ export function Homepage({ user, userNickname, userAvatar, userRank, onOpenScann
             </div>
           ) : (
             <div className="space-y-3">
+              <MeetNewFriendsCard onOpenScanner={onOpenScanner} />
               {missions.map((mission) => (
                 <div
                   key={mission.id}

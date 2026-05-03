@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const result = await client.search({
     index: INDICES.CHALLENGES,
     size: 100,
-    query: { term: { active: true } },
+    query: { match_all: { } },
     sort: [{ type: 'asc' }, { points: 'desc' }],
     _source: ['type', 'title_en', 'title_fr', 'description_en', 'description_fr', 'points', 'code'],
   })
@@ -16,8 +16,8 @@ export default async function handler(req, res) {
   const challenges = result.hits.hits.map(h => ({
     id: h._id,
     type: h._source.type,
-    title: h._source.title,
-    description: h._source.description,
+    title: h._source.title_en,
+    description: h._source.description_en,
     points: h._source.points,
   }))
 

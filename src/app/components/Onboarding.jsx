@@ -14,40 +14,20 @@ const avatarOptions = [
   { id: 10, emoji: '🎲', color: '#FDCB6E' },
 ];
 
-export function Onboarding({ onComplete }) {
+export function Onboarding({ onComplete, error, loading }) {
   const [nickname, setNickname] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const selectedEmoji = avatarOptions.find((a) => a.id === selectedAvatar)?.emoji;
 
-  const handleJoin = async () => {
-    if (!nickname || selectedAvatar === null) return;
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await fetch('/api/user/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          username: nickname, 
-          emoji: selectedEmoji 
-        }),
-      })
-      
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to create user')
-      }
-      
-      const { user } = await response.json()
-      onComplete({ username: nickname, emoji: selectedEmoji });
-    } catch (err) {
-      setError(err.message || 'Something went wrong')
-      setLoading(false)
-    }
-  };
+  const handleJoin = () => {
+  if (!nickname || selectedAvatar === null) return;
+
+  onComplete({
+    nickname,
+    emoji: selectedEmoji,
+  });
+};
 
   return (
     <div
@@ -92,7 +72,6 @@ export function Onboarding({ onComplete }) {
           value={nickname}
           onChange={(e) => {
             setNickname(e.target.value);
-            setError('');
           }}
           error={!!error}
           helperText={error}

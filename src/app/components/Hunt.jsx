@@ -6,6 +6,7 @@ import { EmptyState } from './EmptyState';
 import { SuccessSnackbar } from './SuccessSnackbar';
 import { MissionListSkeleton } from './SkeletonLoading';
 import api from '../../lib/api';
+import { MeetNewFriendsCard } from './MeetNewFriendsCard';
 
 const TYPE_ICONS = {
   booth: 'corporate_fare',
@@ -22,7 +23,7 @@ const FILTERS = [
   { id: 'social', label: 'Social' },
 ];
 
-export function Hunt() {
+export function Hunt({ onOpenScanner }) {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedMission, setSelectedMission] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -156,53 +157,7 @@ export function Hunt() {
       </div>
 
       <div className="px-4 py-6 space-y-4">
-        {/* Persistent Meet Friends Card */}
-        <div
-          className="rounded-2xl p-5 space-y-4"
-          style={{
-            backgroundColor: 'var(--surface-3)',
-            borderLeft: '4px solid var(--ocean-blue)',
-          }}
-        >
-          <div className="flex items-start gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: 'var(--surface-4)' }}
-            >
-              <span className="material-symbols-rounded" style={{ color: 'var(--ocean-blue)', fontSize: '24px' }}>
-                handshake
-              </span>
-            </div>
-            <div className="flex-1">
-              <h3 className="mb-2">Meet Friends</h3>
-              <p className="mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
-                Scan another attendee's QR code to connect and earn points
-              </p>
-              <span
-                className="inline-block px-3 py-1 rounded-full text-xs"
-                style={{
-                  backgroundColor: 'rgba(254, 193, 78, 0.15)',
-                  color: 'var(--golden-amber)',
-                  fontWeight: 500,
-                }}
-              >
-                +100 pts per friend
-              </span>
-            </div>
-          </div>
-
-          <button
-            className="w-full py-3 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'rgba(61, 120, 171, 0.15)',
-              color: 'var(--ocean-blue)',
-              fontWeight: 500,
-              minHeight: '44px',
-            }}
-          >
-            Scan a Friend
-          </button>
-        </div>
+        <MeetNewFriendsCard onOpenScanner={onOpenScanner} />
 
         {/* Mission Cards */}
         {isLoading ? (
